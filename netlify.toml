@@ -4,6 +4,8 @@
     
 [functions]
   directory = "."
+  external_node_modules = ["express", "body-parser", "cors", "request", "serverless-http", "dotenv"]
+  node_bundler = "esbuild"
     
 [[redirects]]
   from = "/*"
