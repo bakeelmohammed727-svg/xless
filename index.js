@@ -1,7 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const path = require('path');
 const serverless = require('serverless-http');
 require('dotenv').config();
 
@@ -11,7 +10,12 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// API Routes Integrated
+// محتوى لوحة التحكم مدمج مباشرة
+const dashboardHTML = `
+PASTE_HTML_HERE
+`;
+
+// API Routes
 app.post('/api/exfiltrate', (req, res) => {
     console.log('Data received:', req.body);
     res.json({ status: 'success' });
@@ -25,9 +29,9 @@ app.get('/api/config', (req, res) => {
     });
 });
 
-// Dashboard
+// Dashboard Route
 app.get('/dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dashboard.html'));
+    res.send(dashboardHTML);
 });
 
 app.get('/', (req, res) => {
