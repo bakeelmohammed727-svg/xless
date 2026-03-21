@@ -1,43 +1,46 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const request = require('request');
+const path = require('path');
 const serverless = require('serverless-http');
 require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Default route for xless dashboard
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Routes
+const apiRoutes = require('./routes/api');
+app.use('/api', apiRoutes);
+
+// Dashboard route
+app.get('/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dashboard.html'));
+});
+
+// Root route to redirect to dashboard or serve index.html if it exists
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/dashboard.html');
+    res.redirect('/dashboard');
 });
 
-// Route to receive and store XSS payloads
-app.post('/xss', (req, res) => {
-    const payload = req.body;
-    console.log('Received XSS Payload:', payload);
-    // Here you would typically store the payload in a database
-    // For now, we\'ll just log it.
-    res.status(200).send('Payload received');
+// Error handling for 404 - This should be after all other routes
+app.use((req, res, next) => {
+    res.status(404).send('Sorry, that route does not exist.');
 });
 
-// Add more routes as needed for your xless functionality
-
-// This is the important part for Netlify Functions
-// We export the Express app wrapped by serverless-http
-const handler = serverless(app);
-
-module.exports.handler = async (event, context) => {
-  const result = await handler(event, context);
-  return result;
-};
-
-// Remove the app.listen part, as Netlify Functions don\'t listen on a port
-// app.listen(port, () => {
-//     console.log(`Xless app listening at http://localhost:${port}`);
-// });
+// If running locally, start the server directly
+if (process.env.NODE_ENV === 'development') {
+    app.listen(port, () => {
+        console.log(`Server running on http://localhost:${port}`);
+    });
+} else {
+    // For Netlify, export the handler
+    module.exports.handler = serverless(app);
+}
