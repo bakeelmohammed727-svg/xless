@@ -3,5 +3,10 @@
   publish = "."
     
 [functions]
-  directory = "./netlify/functions"
+  directory = "."
   node_bundler = "esbuild"
+    
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/index"
+  status = 200
